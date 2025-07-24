@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{subject}}</title>
+  <style>
+    body {
+      background-color: #f4f4f4;
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    .email-container {
+      max-width: 600px;
+      margin: 40px auto;
+      background-color: #ffffff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .header {
+      background-color: #5323a3;
+      color: #ffffff;
+      padding: 30px 20px;
+      text-align: center;
+    }
+
+    .logo {
+      max-width: 140px;
+      margin-bottom: 15px;
+    }
+
+    .content {
+      padding: 30px 20px;
+      color: #333333;
+    }
+
+    .content h2 {
+      margin-top: 0;
+      font-size: 22px;
+      color: #2c3e50;
+    }
+
+    .content p {
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    .footer {
+      background-color: #ecf0f1;
+      padding: 15px 20px;
+      text-align: center;
+      font-size: 13px;
+      color: #888888;
+    }
+  </style>
+</head>
+<body>
+  <div class="email-container">
+    <div class="header">
+      <img class="logo" src="https://app.kietflow.com/assets/images/logo/email_logo.png" style="width: 96px;" alt="{{platform_name}} Logo">
+      <h1>{{header}}</h1>
+    </div>
+    <div class="content">
+      <h2>Hello,</h2>
+      <p>{{msg}}</p>
+    </div>
+    <div class="footer">
+      &copy; {{platform_name}}. All rights reserved.<br>
+      {{address}}
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,20 @@
+RewriteEngine On
+RewriteBase /
+
+# Exclude specific directories from rewriting to index.html
+RewriteCond %{REQUEST_URI} !^/backend/ [NC]
+
+# Rewrite all requests to index.html, except for static files and index.html itself
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|mp3|json)$ [NC]
+RewriteRule ^(.*)$ /index.html [L]
+
+# Handle requests to existing directories and PHP files
+RewriteCond %{REQUEST_FILENAME} !-d 
+RewriteCond %{REQUEST_FILENAME}\.php -f 
+RewriteRule ^(.*)$ $1.php [L]
+
+# Handle requests to existing files
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^([^\.]+)$ $1.php [NC,L]
