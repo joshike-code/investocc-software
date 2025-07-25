@@ -1,10 +1,8 @@
 const CACHE_NAME = 'investocc-v1.0.0';
 const ASSETS_TO_CACHE = [
-    '/assets/images/logo/logo.png',
     '/assets/images/logo/logo-icon.png',
     '/assets/images/logo/app-icon.png',
     '/assets/images/logo/logo-icon-180.png',
-    '/assets/images/logo/logo-title.png',
     '/assets/images/icons/avatar.jpg',
     '/assets/images/my-icons/fixed-returns-tab-icon.png',
     '/assets/images/my-icons/investment.png',
