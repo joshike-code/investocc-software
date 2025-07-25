@@ -3,3 +3,4 @@ build-update.php
 .env
 backend/.env
 backend/error/*
+!backend/error/.gitkeep
