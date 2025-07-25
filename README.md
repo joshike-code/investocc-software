@@ -100,7 +100,6 @@ Supports methods: `GET`, `POST`, `PUT`, `DELETE`
 ## 📬 Support
 
 For assistance, open an [Issue](https://github.com/joshike-code/investocc-software/issues)  
-or contact: **support@degiantsoft.com**
 
 ---
 
