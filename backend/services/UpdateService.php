@@ -286,8 +286,6 @@ class UpdateService
             $indexPath = realpath(__DIR__ . '/../../index.html');
             if (file_exists($indexPath)) {
                 $indexContent = file_get_contents($indexPath);
-
-                // Replace the old dist folder
                 $indexContent = preg_replace('/distv[\d.]+/', "distv$version", $indexContent);
 
                 file_put_contents($indexPath, $indexContent);
@@ -308,8 +306,8 @@ class UpdateService
             }
 
             // Update version.txt
-            $versionText = "version=$version\nupdated_at=$date\n";
-            file_put_contents(self::$versionFile, $versionText);
+            // $versionText = "version=$version\nupdated_at=$date\n";
+            // file_put_contents(self::$versionFile, $versionText);
             self::setStatus('completed', "v$version applied.");
         }
 
