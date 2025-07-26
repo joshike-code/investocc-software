@@ -1,4 +1,4 @@
-const CACHE_NAME = 'investocc-v1.0.3';
+const CACHE_NAME = 'investocc-v1.0.4';
 const ASSETS_TO_CACHE = [
     '/assets/images/logo/logo-icon.png',
     '/assets/images/logo/app-icon.png',
