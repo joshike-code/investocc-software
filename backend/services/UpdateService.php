@@ -279,8 +279,18 @@ class UpdateService
                     }
                 }
 
-                // Optionally clean up update.json after processing
                 unlink($updateJsonPath);
+            }
+
+            // Update index.html
+            $indexPath = realpath(__DIR__ . '/../../index.html');
+            if (file_exists($indexPath)) {
+                $indexContent = file_get_contents($indexPath);
+
+                // Replace the old dist folder
+                $indexContent = preg_replace('/distv[\d.]+/', "distv$version", $indexContent);
+
+                file_put_contents($indexPath, $indexContent);
             }
 
             self::setStatus('extracting', "Extracted v$version. Running migrations...");
