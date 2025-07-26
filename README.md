@@ -48,9 +48,9 @@ This software was built by [Joshike-code](https://github.com/joshike-code) for *
    - If the **Install button** is not clickable, try highlighting the support email field.
 
 6. **Default Superadmin Credentials:**
-
-Email: owner@investocc.com
-Password: 1234
+   - After installation, you'd need to login to superadmin. Use the below default credentials
+   - Email: owner@investocc.com
+   - Password: 1234
 
 7. **Set your Degiant Passkey**  
 You will be prompted to input the **passkey** after login.  
