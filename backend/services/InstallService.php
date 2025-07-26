@@ -31,15 +31,6 @@ class InstallService
         $envContent = "# System Configuration\nHOST_LINK=$hostlink\n\n# Database Configuration\nDB_HOST=$dbHost\nDB_PORT=$dbPort\nDB_NAME=$dbName\nDB_USERNAME=$dbUser\nDB_PASSWORD=$dbPass\n\n# Platform Configuration\nPLATFORM_NAME=$platformName\nPLATFORM_URL=$platformURl\nPLATFORM_ADDRESS=$address\nPLATFORM_SUPPORT_MAIL=$supportMail\n\n# JWT Configuration\nJWT_SECRET_KEY=$jwtSecret\n\n# Degiant Configuration\nDEGIANT_PASSKEY=\n\n# Exchange Rates API Configuration\nEXCHANGE_RATES_API_KEY=\n\n# PHPMailer Configuration\nPHPMAILER_HOST=\nPHPMAILER_USERNAME=\nPHPMAILER_FROM=\nPHPMAILER_PASSWORD=\nPHPMAILER_AUTH=true\nPHPMAILER_SECURITY=TLS\nPHPMAILER_PORT=587\n\n";
         file_put_contents(__DIR__ . '/../.env', $envContent);
 
-        // Install in JS
-        $distPath = realpath(__DIR__ . '/../../dist');
-        $files = glob($distPath . '/*.js');
-        foreach ($files as $file) {
-            $content = file_get_contents($file);
-            $content = str_replace('Investocc', $platformName, $content);
-            file_put_contents($file, $content);
-        }
-
         // Install in index
         $indexPath = realpath(__DIR__ . '/../../index.html');
         if (file_exists($indexPath)) {
