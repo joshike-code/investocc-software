@@ -59,15 +59,6 @@ class UpdateService
     }
 
     public static function getLatestUpdate(): array {
-        // Test response
-        // return [
-        //     'version' => '1.1.0',
-        //     'zip' => 'http://localhost/investocc-software/updates/updatev1.1.0.zip',
-        //     'size' => 237,
-        //     'updated_at' => '2025-07-22T09:15:00Z',
-        //     'changelog' => 'New cool features added for you'
-        // ];
-
         $apiUrl = "https://api.github.com/repos/" . self::$repoOwner . "/" . self::$repoName . "/contents/" . self::$folderPath;
         $files = self::fetchJson($apiUrl);
 
@@ -193,8 +184,12 @@ class UpdateService
     }
 
     public static function applyUpdate(array $input): array {
-        $currentVersion = trim(file_get_contents(self::$versionFile));
-        $currentVersion = str_replace("version=", "", strtok($currentVersion, "\n"));
+        $currentVersionLine = file_get_contents(self::$versionFile);
+        if (preg_match('/version=([\d\.]+)/', $currentVersionLine, $matches)) {
+            $currentVersion = $matches[1];
+        } else {
+            $currentVersion = '0.0.0';
+        }
 
         $updates = self::getAvailableUpdates($currentVersion);
 
