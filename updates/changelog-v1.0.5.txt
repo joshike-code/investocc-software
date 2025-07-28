@@ -1,1 +1,1 @@
-Admin Fund/Deduct user balance.
+Admin Fund/Deduct user balance module added.
