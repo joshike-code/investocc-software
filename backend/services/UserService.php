@@ -313,6 +313,55 @@ class UserService
         }
     }
 
+    public static function topUpBalance($input)
+    {
+        $conn = Database::getConnection();
+
+        $amount = $input['amount'];
+        $user_id = $input['user_id'];
+
+        $stmt = $conn->prepare("UPDATE users SET balance = balance + ? WHERE id = ?");
+        $stmt->bind_param("ds", $amount, $user_id);
+
+        if ($stmt->execute()) {
+            Response::success('Balance topup successful');
+        } else {
+            Response::error('Balance update failed', 500);
+        }
+    }
+
+    public static function deductBalance($input)
+    {
+        $conn = Database::getConnection();
+
+        $amount = $input['amount'];
+        $user_id = $input['user_id'];
+
+        // Check that balance is sufficient
+        $check = $conn->prepare("SELECT balance FROM users WHERE id = ?");
+        $check->bind_param("s", $user_id);
+        $check->execute();
+        
+        $result = $check->get_result()->fetch_assoc();
+        if(!$result) {
+            Response::error('User not found', 404);
+        }
+
+        $currentBalance = $result['balance'];
+        if($amount > $currentBalance) {
+            Response::error('Insufficient balance', 412);
+        }
+
+        $stmt = $conn->prepare("UPDATE users SET balance = balance - ? WHERE id = ?");
+        $stmt->bind_param("ds", $amount, $user_id);
+
+        if ($stmt->execute()) {
+            Response::success('Balance topup successful');
+        } else {
+            Response::error('Balance update failed', 500);
+        }
+    }
+
     public static function createAdmin($input)
     {
         $conn = Database::getConnection();

@@ -152,6 +152,10 @@ switch($request) {
         require 'routes/admin/getReferralCount.php';
         break;
 
+    case $host.'api/admin/balance':
+        require 'routes/admin/balance.php';
+        break;
+
     case $host.'api/admin/order':
         require 'routes/admin/order.php';
         break;

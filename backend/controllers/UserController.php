@@ -101,6 +101,29 @@ class UserController {
         UserService::updateUserProfile($user_id, $input);
     }
 
+    public static function updateBalance($type) {
+        $rawInput = json_decode(file_get_contents("php://input"), true);
+        $input = SanitizationService::sanitize($rawInput);
+        
+        // Validate Input
+        $rules = [
+            'amount'  => 'required|float',
+            'user_id'  => 'required|integer',
+        ];
+        $input_errors = Validator::validate($input, $rules);
+        if(!empty($input_errors)) {
+            Response::error(['validation_errors' => $input_errors], 422);
+        }
+
+        if($type === 'topup') {
+            UserService::topUpBalance($input);
+        } elseif($type === 'deduct') {
+            UserService::deductBalance($input);
+        } else {
+            Response::error('Method not allowed', 403);
+        };
+    }
+
     public static function updateAdmin($user_id) {
         $rawInput = json_decode(file_get_contents("php://input"), true);
         $input = SanitizationService::sanitize($rawInput);
