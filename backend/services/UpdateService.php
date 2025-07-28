@@ -16,7 +16,7 @@ class UpdateService
     private static string $repoName = 'investocc-software';  //Do  not change this value
     private static string $folderPath = 'updates';  //Do  not change this value
 
-    public static function fetchJson(string $url, int $cacheTtl = 3600): array
+    public static function fetchJson(string $url, int $cacheTtl = 600): array
     {
         $cacheDir = __DIR__ . '/../cache/';
         if (!is_dir($cacheDir)) {
