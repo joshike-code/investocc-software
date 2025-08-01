@@ -10,7 +10,7 @@ class ExchangeService
 {
     
     private static $cacheFile = __DIR__ . '/../cache/exchange_rate.json';
-    private static $cacheDuration = 3600 * 800;
+    private static $cacheDuration = 3600 * 1;
 
     public static function getUsdToNairaRate()
     {
