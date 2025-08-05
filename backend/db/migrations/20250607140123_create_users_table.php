@@ -23,7 +23,7 @@ class CreateUsersTable extends AbstractMigration
             ->addColumn('phone', 'string', ['limit' => 25])
             ->addColumn('country', 'string', [
                 'limit' => 5,
-                'default' => 'NG'
+                'default' => 'US'
             ])
             ->addColumn('balance', 'decimal', [
                 'precision' => 10,
