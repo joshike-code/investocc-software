@@ -66,7 +66,9 @@ class MailManagerService {
             Response::error("Failed to write to .env file", 500);
         }
 
-        Response::success("Mailer settings updated successfully");
+        // Response::success("Mailer settings updated successfully");
+        $mailData = self::getMailSettings();
+        Response::success($mailData);
     }
 }
 ?>
