@@ -1,2 +1,2 @@
-version=1.8.2
-updated_at=2025-08-18T20:14:48Z
+version=1.8.3
+updated_at=2025-08-18T20:38:02Z
