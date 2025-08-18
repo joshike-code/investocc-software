@@ -7,7 +7,7 @@ error_reporting(E_ALL);
 require_once __DIR__ . '/../core/response.php';
 
 // This Service is responsible for delivering updates to this software. Tampering with this file would prevent you...
-// ...from receiving future updates. Older versions of this software will not function after awhile. Hence updates are required.
+// ...from receiving future updates. Older versions of this software will not function after awhile. Hence updates are required!
 
 class UpdateService
 {
