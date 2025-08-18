@@ -1,8 +1,8 @@
 deploy.ps1
 build-update.php
-.env
-backend/.env
-backend/error/*
-!backend/error/.gitkeep
-backend/cache/*
-!backend/cache/.gitkeep
+app/.env
+app/backend/.env
+app/backend/error/*
+!app/backend/error/.gitkeep
+app/backend/cache/*
+!app/backend/cache/.gitkeep

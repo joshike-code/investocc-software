@@ -8,7 +8,7 @@ This software was built by [Joshike-code](https://github.com/joshike-code) for *
 
 ## 🚀 Features
 
-- ✅ PHP API backend (connect via `/backend/api/`)
+- ✅ PHP API backend (connect via `/app/backend/api/`)
 - ✅ ES6 JavaScript frontend (bundled with Webpack, transpiled with Babel)
 - ✅ JWT-based secure authentication
 - ✅ MySQL database
@@ -32,8 +32,8 @@ This software was built by [Joshike-code](https://github.com/joshike-code) for *
    - DB user  
    - DB password  
 
-2. **Visit your app’s domain in the browser**  
-   Example: `https://yourdomain.com`  
+2. **Visit your app’s domain in the browser with '/app/'**  
+   Example: `https://yourdomain.com/app/`  
    You should see the **Login Page**.
 
 3. **Enter any login credentials**  
@@ -61,7 +61,7 @@ Go to **Admin Settings** and configure mail settings to enable OTP verification 
 
 9. **Set Up Cron**  
 Add the script below to your server’s cron scheduler:
-backend/cron/cron_update.php
+app/backend/cron/cron_update.php
 
 10. **Done!**  
  You can now use your Investocc platform. Be sure to update it when prompted.
@@ -72,7 +72,7 @@ backend/cron/cron_update.php
 
 If the Installation Wizard doesn't work:
 
-- Create a `.env` file inside `/backend`
+- Create a `.env` file inside `/app/backend`
 - Use `.env.example` as a reference
 - You can always update settings via this file
 
@@ -80,8 +80,8 @@ If the Installation Wizard doesn't work:
 
 ## 📂 Error Logs
 
-- Server Errors → `backend/error/server_errors.log`
-- Client Errors → `backend/error/client_errors.log`
+- Server Errors → `app/backend/error/server_errors.log`
+- Client Errors → `app/backend/error/client_errors.log`
 
 These logs can help you diagnose any issues in the app.
 
@@ -90,7 +90,7 @@ These logs can help you diagnose any issues in the app.
 ## 🌐 API Overview
 
 Your backend API base URL:
-https://yourdomain.com/backend/api
+https://yourdomain.com/app/backend/api
 
 
 Supports methods: `GET`, `POST`, `PUT`, `DELETE`
