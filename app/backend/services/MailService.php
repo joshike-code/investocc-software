@@ -21,7 +21,7 @@ class MailService
         $mail = new PHPMailer(true);
         $mail->isSMTP();
         $mail->Host = $keys['phpmailer']['host'];
-        $mail->SMTPAuth = strtolower($keys['phpmailer']['auth']) === 'true' ? true : false;
+        $mail->SMTPAuth = $keys['phpmailer']['auth'];
         $mail->Username = $keys['phpmailer']['username'];
         $mail->Password = $keys['phpmailer']['password'];
         $mail->SMTPSecure = strtolower($keys['phpmailer']['security']) === 'ssl' ? PHPMailer::ENCRYPTION_SMTPS : PHPMailer::ENCRYPTION_STARTTLS;
