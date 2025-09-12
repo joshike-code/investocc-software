@@ -300,6 +300,19 @@ class UpdateService
                 Response::error("Unknown migration error.", 400);
             }
 
+            //Update .env from .env-example if new keys are added
+            require_once __DIR__ . '/EnvSyncService.php';
+            $envSyncResult = EnvSyncService::syncEnvironmentFiles();
+            
+            if ($envSyncResult['status'] === 'error') {
+                self::setStatus('error', "Environment synchronization failed: " . $envSyncResult['message']);
+                Response::error("Environment synchronization failed: " . $envSyncResult['message'], 400);
+            }
+            
+            if (!empty($envSyncResult['added_keys'])) {
+                self::setStatus('updating', 'Updated environment variables.');
+            }
+
             // Update version.txt
             // $versionText = "version=$version\nupdated_at=$date\n";
             // file_put_contents(self::$versionFile, $versionText);
