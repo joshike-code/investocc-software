@@ -59,16 +59,27 @@ class UpdateService
     }
 
     public static function getLatestUpdate(): array {
+        // Get current installed version
+        $currentVersionLine = file_get_contents(self::$versionFile);
+        if (preg_match('/version=([\d\.]+)/', $currentVersionLine, $matches)) {
+            $currentVersion = $matches[1];
+        } else {
+            $currentVersion = '0.0.0';
+        }
+
         $apiUrl = "https://api.github.com/repos/" . self::$repoOwner . "/" . self::$repoName . "/contents/" . self::$folderPath;
         $files = self::fetchJson($apiUrl);
 
         $latestVersion = '0.0.0';
         $zipFileData = [];
+        $uninstalledVersions = [];
 
+        // Find all versions and identify uninstalled ones
         foreach ($files as $file) {
             if ($file['type'] === 'file' && preg_match('/updatev(\d+\.\d+\.\d+)\.zip$/', $file['name'], $match)) {
                 $version = $match[1];
 
+                // Track latest version info
                 if (version_compare($version, $latestVersion, '>')) {
                     $latestVersion = $version;
                     $zipFileData = [
@@ -78,18 +89,45 @@ class UpdateService
                         'updated_at' => $file['git_url'] ?? '' // Temporary
                     ];
                 }
+
+                // Collect all uninstalled versions
+                if (version_compare($version, $currentVersion, '>')) {
+                    $uninstalledVersions[$version] = [
+                        'version' => $version,
+                        'size' => $file['size'],
+                        'changelog' => self::getChangelog($files, $version)
+                    ];
+                }
             }
         }
 
-        $changelog = self::getChangelog($files, $latestVersion);
+        // Sort uninstalled versions (oldest to newest)
+        uksort($uninstalledVersions, 'version_compare');
+
+        // Aggregate size and changelogs from all uninstalled versions
+        $totalSize = 0;
+        $combinedChangelog = '';
+        $changelogParts = [];
+
+        foreach ($uninstalledVersions as $versionData) {
+            $totalSize += $versionData['size'];
+            
+            if (!empty($versionData['changelog'])) {
+                $changelogParts[] = "v{$versionData['version']}: " . $versionData['changelog'];
+            }
+        }
+
+        $combinedChangelog = implode('<br>', $changelogParts);
+
+        // Get latest version's commit time
         $zipFileData['updated_at'] = self::getCommitTime("updatev$latestVersion.zip");
 
         return [
             'version' => $zipFileData['version'],
             'zip' => $zipFileData['zip'],
-            'size' => $zipFileData['size'],
+            'size' => $totalSize, // Combined size of all uninstalled versions
             'updated_at' => $zipFileData['updated_at'],
-            'changelog' => $changelog
+            'changelog' => $combinedChangelog // Combined changelogs of all uninstalled versions
         ];
     }
 
