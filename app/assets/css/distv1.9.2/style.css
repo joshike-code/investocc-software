@@ -70,11 +70,11 @@
 	==============
 ========================= */
 /*==== 1. Abstracts ====*/
-@import url("../vendor/fontawesome/css/all.min.css");
-@import url("../vendor/flaticon/flaticon.css");
-@import url("../vendor/uicons-solid-rounded/css/uicons-solid-rounded.css");
-@import url("../vendor/line-awesome/css/line-awesome.min.css");
-@import url("../vendor/themify-icons/css/themify-icons.css");
+@import url("../../vendor/fontawesome/css/all.min.css");
+@import url("../../vendor/flaticon/flaticon.css");
+@import url("../../vendor/uicons-solid-rounded/css/uicons-solid-rounded.css");
+@import url("../../vendor/line-awesome/css/line-awesome.min.css");
+@import url("../../vendor/themify-icons/css/themify-icons.css");
 :root {
   --primary: #027335;
   --primary-light: rgba(255, 251, 246, 0.80);
@@ -12612,7 +12612,7 @@ section {
   .theme-dark .profile-area .profile .media img {
     border: 5px solid #2a4072; }
   .theme-dark .get-started {
-    background-image: url("../images/background/bg-dark.png"); }
+    background-image: url("../../images/background/bg-dark.png"); }
   .theme-dark .payment-wrapper {
     background-color: rgba(255, 255, 255, 0.1); }
   .theme-dark .detail-area.style-2 {
@@ -18418,13 +18418,13 @@ ul.list-check {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-image: url("../images/background/bg.jpg");
+  background-image: url("../../images/background/bg.jpg");
   background-size: cover;
   background-repeat: no-repeat;
   width: 100%;
   height: 100vh; }
   .payment-confirm-wrapper.style-2 {
-    background-image: url("../../error.html"); }
+    background-image: url("../../../error.html"); }
     .payment-confirm-wrapper.style-2 i {
       box-shadow: rgba(50, 50, 93, 0.25) 0px 50px 100px -20px, rgba(0, 0, 0, 0.3) 0px 30px 60px -30px, rgba(10, 37, 64, 0.35) 0px -2px 6px 0px inset; }
 
@@ -19902,7 +19902,7 @@ ul.list-check {
   text-align: center;
   flex: 1;
   width: 100%;
-  background-image: url("../images/background/bg1.png");
+  background-image: url("../../images/background/bg1.png");
   background-size: cover;
   background-repeat: no-repeat; }
   .get-started .swiper-wrapper {

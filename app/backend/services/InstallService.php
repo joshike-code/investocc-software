@@ -55,7 +55,7 @@ class InstallService
         $manifest = [
             "name" => strtoupper($platformName),
             "short_name" => $platformName,
-            "start_url" => "/app/index.html",
+            "start_url" => "/app/",
             "scope" => "/app/",
             "theme_color" => "#FFFFFF",
             "description" => "$platformName: Crypto and stocks investment",
@@ -80,12 +80,20 @@ class InstallService
         $result = include __DIR__ . '/../run-migrations.php';
         if (is_array($result)) {
             if($result['status'] === 'error') {
-                Response::error("Migration failed.", 400);
                 $e = $result['error'];
                 error_log("Update migrations error: {$e}");
+                Response::error("Migration failed.", 400);
             }
         } else {
             Response::error("Unknown migration error.", 400);
+        }
+
+        //Update .env from .env-example
+        require_once __DIR__ . '/EnvSyncService.php';
+        $envSyncResult = EnvSyncService::syncEnvironmentFiles();
+        
+        if ($envSyncResult['status'] === 'error') {
+            Response::error("Environment synchronization failed: " . $envSyncResult['message'], 400);
         }
 
         Response::success("Installation credentials saved successfully.");

@@ -1,2 +1,2 @@
-version=1.9.0
-updated_at=2025-09-12T22:43:39Z
+version=1.9.2
+updated_at=2025-09-13T20:14:19Z

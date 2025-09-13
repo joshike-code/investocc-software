@@ -34,6 +34,9 @@ return [
     'exchangeratesapi' => [
         'api_key' => $_ENV['EXCHANGE_RATES_API_KEY'] ?? getenv('EXCHANGE_RATES_API_KEY')
     ],
+    'finnhub' => [
+        'api_key' => $_ENV['FINNHUB_API_KEY'] ?? getenv('FINNHUB_API_KEY')
+    ],
     'phpmailer' => [
         'host' => $_ENV['PHPMAILER_HOST'] ?? getenv('PHPMAILER_HOST'),
         'username' => $_ENV['PHPMAILER_USERNAME'] ?? getenv('PHPMAILER_USERNAME'),

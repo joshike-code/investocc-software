@@ -2352,8 +2352,15 @@ button.btn-primary:hover, button.btn-primary:focus, button.btn-primary:active {
 
 .header .market-status {
   font-size: 13px;
-  color: #FF3B30;
   font-weight: 400;
+}
+
+.header .market-status.closed {
+  color: #ef4444;
+}
+
+.header .market-status.open {
+  color: #22c55e;
 }
 
 .header .order-type {

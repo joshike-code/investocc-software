@@ -330,9 +330,9 @@ class UpdateService
             $result = include __DIR__ . '/../run-migrations.php';
             if (is_array($result)) {
                 if($result['status'] === 'error') {
-                    Response::error("Migration failed.", 400);
                     $e = $result['error'];
                     error_log("Update migrations error: {$e}");
+                    Response::error("Migration failed.", 400);
                 }
             } else {
                 Response::error("Unknown migration error.", 400);

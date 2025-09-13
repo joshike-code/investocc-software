@@ -31,6 +31,15 @@ switch ($_SERVER['REQUEST_METHOD']) {
         StockController::getStocks();
         break;
 
+    case 'POST':
+        // Only allow admins to manually update stock prices
+        $admin = AuthMiddleware::handle(['admin', 'superadmin']);
+        if(isset($_GET['action']) && $_GET['action'] === 'update_prices') {
+            StockController::updateStockPrices();
+        }
+        Response::error('Invalid action', 400);
+        break;
+
     default:
         http_response_code(405);
         echo json_encode(['status' => 'error', 'message' => 'Method not allowed']);

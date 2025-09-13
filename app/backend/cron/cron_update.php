@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../core/response.php';
 require_once __DIR__ . '/../services/PlatformService.php';
+require_once __DIR__ . '/../services/StockService.php';
 
 date_default_timezone_set('GMT');
 $conn = Database::getConnection();
@@ -77,6 +78,36 @@ try {
             $conn->rollback();
             error_log("Failed to update investment $id: " . $e->getMessage());
         }
+    }
+
+    echo "Investment processing completed successfully.\n";
+
+    // Update stock prices using smart update (respects configured frequency)
+    echo "Starting stock price updates...\n";
+    try {
+        $stockUpdateResult = StockService::smartUpdateStockPrices();
+        
+        if ($stockUpdateResult['updated'] > 0) {
+            echo "Stock update: " . $stockUpdateResult['message'] . "\n";
+            echo "Updated {$stockUpdateResult['updated']} stocks, skipped {$stockUpdateResult['skipped']} with fresh cache.\n";
+        } else {
+            echo "Stock update: All prices are fresh (within configured update frequency).\n";
+        }
+        
+        // Log stock update results
+        $logMessage = sprintf(
+            "[%s] Stock update: Updated %d/%d stocks\n",
+            date('Y-m-d H:i:s'),
+            $stockUpdateResult['updated'],
+            $stockUpdateResult['total']
+        );
+        
+        $logFile = __DIR__ . '/../update_stock_prices.log';
+        file_put_contents($logFile, $logMessage, FILE_APPEND | LOCK_EX);
+        
+    } catch (Exception $stockException) {
+        error_log("Stock update failed: " . $stockException->getMessage());
+        echo "Stock update failed: " . $stockException->getMessage() . "\n";
     }
 
     echo "Cron completed successfully.\n";

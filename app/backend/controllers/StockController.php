@@ -16,26 +16,32 @@ class StockController {
 
     public static function getStocks() {
         $stockCategories = StockService::getStockCategories();
-        $stocks = StockService::getAllStocks();
+        $stocks = StockService::getAllStocks(); // Database only - no API calls
         Response::success([
             'categories' => $stockCategories,
-            'stocks' => $stocks
+            'stocks' => $stocks,
+            'market_status' => StockService::getMarketStatus()
         ]);
     }
 
     public static function getStockById($id) {
-        $stock = StockService::getStockById($id);
+        $stock = StockService::getStockByIdFromDb($id);
         Response::success($stock);
     }
 
     public static function getStocksByCategory($filter) {
-        $stocks = StockService::getStocksByCategory($filter);
+        $stocks = StockService::getStocksByCategoryFromDb($filter);
         Response::success($stocks);
     }
 
     public static function searchStocks($searchTerm) {
-        $stocks = StockService::searchStocks($searchTerm);
+        $stocks = StockService::searchStocksFromDb($searchTerm);
         Response::success($stocks);
+    }
+
+    public static function updateStockPrices() {
+        $result = StockService::smartUpdateStockPrices();
+        Response::success($result);
     }
 }
 
