@@ -1,1 +1,2 @@
-Realtime/ Live stocks data added with finnhub API.
+Realtime/ Live stocks data added with finnhub API <br>
+Icons bug fixed
