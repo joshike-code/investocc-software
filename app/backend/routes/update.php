@@ -11,13 +11,31 @@ error_reporting(E_ALL);
 
 require_once __DIR__ . '/../controllers/UpdateController.php';
 require_once __DIR__ . '/../core/SanitizationService.php';
+require_once __DIR__ . '/../middleware/AuthMiddleware.php';
 
 switch ($_SERVER['REQUEST_METHOD']) {
     case 'GET':
-        UpdateController::getLatestUpdate();
+        $user = AuthMiddleware::handle(['superadmin', 'admin']);
+        $user_id = $user->user_id;
+
+        $raw_action = $_GET['action'] ?? '';
+        $action = SanitizationService::sanitizeParam($raw_action);
+        if(!$action) {
+            Response::error('Action is required', 400);
+        }
+        if($action === 'latest') {
+            UpdateController::getLatestUpdate();
+        } else if($action === 'changelogs') {
+            UpdateController::getAllChangelogs();
+        } else {
+            Response::error('Method not allowed', 405);
+        }
         break;
 
     case 'POST':
+        $user = AuthMiddleware::handle(['superadmin']);
+        $user_id = $user->user_id;
+
         $raw_action = $_GET['action'] ?? '';
         $action = SanitizationService::sanitizeParam($raw_action);
         if(!$action) {

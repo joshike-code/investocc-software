@@ -7,15 +7,11 @@ error_reporting(E_ALL);
 require_once __DIR__ . '/../core/response.php';
 
 // This Service is responsible for delivering updates to this software. Tampering with this file would prevent you...
-// ...from receiving future updates. Older versions of this software will not function after awhile. Hence updates are required!
+// ...from receiving future updates. Older versions of this software may not properly function after awhile. Hence updates are required!
 
 class UpdateService
 {
     //Fetch update methods
-    private static string $repoOwner = 'joshike-code';  //Do  not change this value
-    private static string $repoName = 'investocc-software';  //Do  not change this value
-    private static string $folderPath = 'updates';  //Do  not change this value
-
     public static function fetchJson(string $url, int $cacheTtl = 600): array
     {
         $cacheDir = __DIR__ . '/../cache/';
@@ -67,8 +63,9 @@ class UpdateService
             $currentVersion = '0.0.0';
         }
 
-        $apiUrl = "https://api.github.com/repos/" . self::$repoOwner . "/" . self::$repoName . "/contents/" . self::$folderPath;
-        $files = self::fetchJson($apiUrl);
+        $config = self::getConfig();
+        $apiUrl = "https://api.github.com/repos/" . $config['owner'] . "/" . $config['repo'] . "/contents/" . $config['folder'];
+        $files = self::fetchJson($apiUrl, 1800);
 
         $latestVersion = '0.0.0';
         $zipFileData = [];
@@ -145,7 +142,8 @@ class UpdateService
     }
 
     private static function getCommitTime(string $filename): string {
-        $url = "https://api.github.com/repos/" . self::$repoOwner . "/" . self::$repoName . "/commits?path=" . self::$folderPath . "/$filename&page=1&per_page=1";
+        $config = self::getConfig();
+        $url = "https://api.github.com/repos/" . $config['owner'] . "/" . $config['repo'] . "/commits?path=" . $config['folder'] . "/$filename&page=1&per_page=1";
 
         try {
             $commits = self::fetchJson($url);
@@ -197,7 +195,8 @@ class UpdateService
     private static string $statusFile = __DIR__ . '/../update_status.json';
 
     public static function getAvailableUpdates(string $currentVersion): array {
-        $apiUrl = "https://api.github.com/repos/" . self::$repoOwner . "/" . self::$repoName . "/contents/" . self::$folderPath;
+        $config = self::getConfig();
+        $apiUrl = "https://api.github.com/repos/" . $config['owner'] . "/" . $config['repo'] . "/contents/" . $config['folder'];
         $files = self::fetchJson($apiUrl);
 
         $updates = [];
@@ -376,6 +375,207 @@ class UpdateService
             'timestamp' => date('c')
         ];
         file_put_contents(self::$statusFile, json_encode($data));
+    }
+
+    /**
+     * Get all changelogs for display on changelog history page
+     * Returns formatted changelog data from oldest to newest version
+     * Uses caching to reduce GitHub API calls and avoid rate limits
+     * 
+     * @return array Formatted changelog data for frontend display
+     */
+    public static function getAllChangelogs(): array
+    {
+        try {
+            $config = self::getConfig();
+            
+            // Use longer cache for changelog history (1 hour) since it changes less frequently
+            $cacheDir = __DIR__ . '/../cache/';
+            $cacheKey = 'all_changelogs_' . md5($config['owner'] . $config['repo'] . $config['folder']);
+            $cacheFile = $cacheDir . $cacheKey . '.json';
+            $cacheTtl = 3600; // 1 hour cache
+
+            // Check if we have cached data
+            if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < $cacheTtl) {
+                $cached = file_get_contents($cacheFile);
+                $cachedData = json_decode($cached, true);
+                
+                if ($cachedData && isset($cachedData['status']) && $cachedData['status'] === 'success') {
+                    return $cachedData;
+                }
+            }
+
+            // Fetch fresh data with extended cache for API calls
+            $apiUrl = "https://api.github.com/repos/" . $config['owner'] . "/" . $config['repo'] . "/contents/" . $config['folder'];
+            $files = self::fetchJson($apiUrl, 1800); // 30 minutes cache for folder contents
+
+            $versions = [];
+            $changelogData = [];
+
+            // Find all version files and collect version info
+            foreach ($files as $file) {
+                if ($file['type'] === 'file' && preg_match('/updatev(\d+\.\d+\.\d+)\.zip$/', $file['name'], $match)) {
+                    $version = $match[1];
+                    
+                    // Cache commit time requests with longer TTL
+                    $commitTime = self::getCachedCommitTime("updatev$version.zip");
+                    
+                    $versions[$version] = [
+                        'version' => $version,
+                        'size' => $file['size'],
+                        'updated_at' => $commitTime
+                    ];
+                }
+            }
+
+            // Sort versions from oldest to newest
+            uksort($versions, 'version_compare');
+            
+            // Limit to last 20 versions to stay within GitHub rate limits (41 API calls total)
+            // This ensures each user stays within the 60 requests/hour limit
+            $versions = array_slice($versions, -20, 20, true);
+
+            // Get changelog for each version
+            foreach ($versions as $version => $versionData) {
+                $changelog = self::getCachedChangelog($files, $version);
+                
+                $changelogData[] = [
+                    'version' => $version,
+                    'changelog' => $changelog ?: 'No changelog available for this version.',
+                    'size' => $versionData['size'],
+                    'size_formatted' => self::formatFileSize($versionData['size']),
+                    'release_date' => $versionData['updated_at'] ? date('M j, Y', strtotime($versionData['updated_at'])) : 'Unknown',
+                    'release_date_full' => $versionData['updated_at'] ?: '',
+                    'download_url' => "https://raw.githubusercontent.com/" . $config['owner'] . "/" . $config['repo'] . "/main/" . $config['folder'] . "/updatev$version.zip"
+                ];
+            }
+
+            $result = [
+                'status' => 'success',
+                'total_versions' => count($changelogData),
+                'changelogs' => $changelogData,
+                'latest_version' => !empty($changelogData) ? end($changelogData)['version'] : '0.0.0',
+                'oldest_version' => !empty($changelogData) ? reset($changelogData)['version'] : '0.0.0',
+                'cached_at' => date('Y-m-d H:i:s'),
+                'cache_expires' => date('Y-m-d H:i:s', time() + $cacheTtl)
+            ];
+
+            // Cache the complete result
+            if (!is_dir($cacheDir)) {
+                mkdir($cacheDir, 0777, true);
+            }
+            file_put_contents($cacheFile, json_encode($result));
+
+            return $result;
+
+        } catch (Exception $e) {
+            return [
+                'status' => 'error',
+                'message' => 'Failed to fetch changelog data',
+                'error' => $e->getMessage(),
+                'changelogs' => []
+            ];
+        }
+    }
+
+    /**
+     * Get cached commit time with extended cache duration
+     */
+    private static function getCachedCommitTime(string $filename): string
+    {
+        $cacheDir = __DIR__ . '/../cache/';
+        $cacheKey = 'commit_time_' . md5($filename);
+        $cacheFile = $cacheDir . $cacheKey . '.json';
+        $cacheTtl = 7200; // 2 hours cache for commit times (they don't change)
+
+        // Check cache first
+        if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < $cacheTtl) {
+            $cached = file_get_contents($cacheFile);
+            $cachedData = json_decode($cached, true);
+            if ($cachedData && isset($cachedData['commit_time'])) {
+                return $cachedData['commit_time'];
+            }
+        }
+
+        // Fetch fresh data
+        $commitTime = self::getCommitTime($filename);
+
+        // Cache the result
+        if (!is_dir($cacheDir)) {
+            mkdir($cacheDir, 0777, true);
+        }
+        file_put_contents($cacheFile, json_encode(['commit_time' => $commitTime, 'cached_at' => time()]));
+
+        return $commitTime;
+    }
+
+    /**
+     * Get cached changelog content with extended cache duration
+     */
+    private static function getCachedChangelog(array $files, string $version): string
+    {
+        $cacheDir = __DIR__ . '/../cache/';
+        $cacheKey = 'changelog_' . md5($version);
+        $cacheFile = $cacheDir . $cacheKey . '.json';
+        $cacheTtl = 7200; // 2 hours cache for changelogs (they don't change)
+
+        // Check cache first
+        if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < $cacheTtl) {
+            $cached = file_get_contents($cacheFile);
+            $cachedData = json_decode($cached, true);
+            if ($cachedData && isset($cachedData['changelog'])) {
+                return $cachedData['changelog'];
+            }
+        }
+
+        // Fetch fresh data
+        $changelog = self::getChangelog($files, $version);
+
+        // Cache the result
+        if (!is_dir($cacheDir)) {
+            mkdir($cacheDir, 0777, true);
+        }
+        file_put_contents($cacheFile, json_encode(['changelog' => $changelog, 'cached_at' => time()]));
+
+        return $changelog;
+    }
+
+    /**
+     * Format file size in human readable format
+     * 
+     * @param int $bytes File size in bytes
+     * @return string Formatted file size (e.g., "2.5 MB")
+     */
+    private static function formatFileSize(int $bytes): string
+    {
+        if ($bytes === 0) return '0 B';
+        
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        $power = floor(log($bytes, 1024));
+        $size = round($bytes / pow(1024, $power), 2);
+        
+        return $size . ' ' . $units[$power];
+    }
+
+    private static function getConfig(): array
+    {
+        $config = [
+            'o' => 'am9zaGlrZS1jb2Rl',
+            'r' => 'aW52ZXN0b2NjLXNvZnR3YXJl',
+            'f' => 'dXBkYXRlcw=='
+        ];
+        
+        $expected = md5($config['o'] . $config['r'] . $config['f'] . 'investocc_salt_9x7k2m');
+        if ($expected !== 'd7337c3a4cf6e801be70620c49b31371') {
+            error_log("Configuration integrity check failed");
+            Response::error("System integrity verification failed", 500);
+        }
+        
+        return [
+            'owner' => base64_decode($config['o']),
+            'repo' => base64_decode($config['r']), 
+            'folder' => base64_decode($config['f'])
+        ];
     }
 
     private static function deleteDirectory(string $dir): bool

@@ -1,1 +1,1 @@
-Minor Bug fix.
+*Minor Bug fix.

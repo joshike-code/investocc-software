@@ -1,2 +1,1 @@
-- Landing/Public pages added to software
-- This update is very large, please do not install. It's adviced to delete all files from cpanel and install the latest zip from <a href="https://github.com/joshike-code/investocc-software">https://github.com/joshike-code/investocc-software</a>
+*Landing/Public pages added to software

@@ -24,6 +24,11 @@ class UpdateController {
         Response::success($result);
     }
 
+    public static function getAllChangelogs() {
+        $result = UpdateService::getAllChangelogs();
+        Response::success($result);
+    }
+
     public static function applyUpdate() {
         $rawInput = json_decode(file_get_contents("php://input"), true);
         $input = SanitizationService::sanitize($rawInput);

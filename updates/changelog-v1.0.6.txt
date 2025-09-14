@@ -1,1 +1,1 @@
-Major Bug fix.
+*Major Bug fix.
