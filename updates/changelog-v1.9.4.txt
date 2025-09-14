@@ -1,2 +1,2 @@
-<br> New changelogs viewer
-<br> UI improvements
+*New changelogs viewer
+*UI improvements
