@@ -1,0 +1,1 @@
+*Reduced stock price update frequency to 30 minutes to avoid API rate limits. *Changelog fetches all versions now. *New updates management system. *Admin UI improvements.
