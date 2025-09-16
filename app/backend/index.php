@@ -100,6 +100,10 @@ switch($request) {
         require 'routes/bankAccounts.php';
         break;
 
+    case $host.'api/config':
+        require 'routes/config.php';
+        break;
+
     case $host.'api/withdraw':
         require 'routes/withdraw.php';
         break;

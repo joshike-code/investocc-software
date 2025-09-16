@@ -26,7 +26,8 @@ switch ($_SERVER['REQUEST_METHOD']) {
         if($action === 'latest') {
             UpdateController::getLatestUpdate();
         } else if($action === 'changelogs') {
-            UpdateController::getAllChangelogs();
+            Response::success('Fetching changelogs may take a moment. Please wait...');
+            // UpdateController::getAllChangelogs();
         } else {
             Response::error('Method not allowed', 405);
         }

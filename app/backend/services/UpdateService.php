@@ -6,7 +6,7 @@ error_reporting(E_ALL);
 
 require_once __DIR__ . '/../core/response.php';
 
-// This Service is responsible for delivering updates to this software. Tampering with this file would prevent you...
+// This Service is responsible for delivering updates to this software. Altering this file would prevent you...
 // ...from receiving future updates. Older versions of this software may not properly function after awhile. Hence updates are required!
 
 class UpdateService
@@ -55,7 +55,6 @@ class UpdateService
     }
 
     public static function getLatestUpdate(): array {
-        // Get current installed version
         $currentVersionLine = file_get_contents(self::$versionFile);
         if (preg_match('/version=([\d\.]+)/', $currentVersionLine, $matches)) {
             $currentVersion = $matches[1];
@@ -122,9 +121,9 @@ class UpdateService
         return [
             'version' => $zipFileData['version'],
             'zip' => $zipFileData['zip'],
-            'size' => $totalSize, // Combined size of all uninstalled versions
+            'size' => $totalSize, // All
             'updated_at' => $zipFileData['updated_at'],
-            'changelog' => $combinedChangelog // Combined changelogs of all uninstalled versions
+            'changelog' => $combinedChangelog // All
         ];
     }
 
@@ -350,9 +349,54 @@ class UpdateService
                 self::setStatus('updating', 'Updated environment variables.');
             }
 
-            // Update version.txt
-            // $versionText = "version=$version\nupdated_at=$date\n";
-            // file_put_contents(self::$versionFile, $versionText);
+            // Handle run scripts (execute and delete)
+            if (!empty($updateMeta['run'])) {
+                self::setStatus('updating', "Running update scripts...");
+                
+                foreach ($updateMeta['run'] as $runScript) {
+                    $scriptPath = self::$extractTo . $runScript;
+                    
+                    if (file_exists($scriptPath)) {
+                        self::setStatus('updating', "Executing script: " . basename($runScript));
+                        
+                        try {
+                            // Execute the script
+                            $output = null;
+                            $returnCode = null;
+                            
+                            // Capture output and errors
+                            ob_start();
+                            $result = include $scriptPath;
+                            $scriptOutput = ob_get_clean();
+                            
+                            // Log script execution
+                            error_log("Update script executed: $runScript");
+                            if ($scriptOutput) {
+                                error_log("Script output: $scriptOutput");
+                            }
+                            
+                            // Delete the script after execution
+                            unlink($scriptPath);
+                            error_log("Update script deleted: $runScript");
+                            
+                        } catch (Exception $e) {
+                            // Delete script even if it failed
+                            if (file_exists($scriptPath)) {
+                                unlink($scriptPath);
+                            }
+                            
+                            error_log("Update script error in $runScript: " . $e->getMessage());
+                            self::setStatus('error', "Script execution failed: " . basename($runScript));
+                            Response::error("Update script execution failed", 400);
+                        }
+                    } else {
+                        error_log("Update script not found: $scriptPath");
+                    }
+                }
+                
+                self::setStatus('updating', "Update scripts completed.");
+            }
+
             self::setStatus('completed', "v$version applied.");
         }
 
@@ -393,7 +437,7 @@ class UpdateService
             $cacheDir = __DIR__ . '/../cache/';
             $cacheKey = 'all_changelogs_' . md5($config['owner'] . $config['repo'] . $config['folder']);
             $cacheFile = $cacheDir . $cacheKey . '.json';
-            $cacheTtl = 3600; // 1 hour cache
+            $cacheTtl = 3600;
 
             // Check if we have cached data
             if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < $cacheTtl) {
@@ -431,8 +475,7 @@ class UpdateService
             // Sort versions from oldest to newest
             uksort($versions, 'version_compare');
             
-            // Limit to last 20 versions to stay within GitHub rate limits (41 API calls total)
-            // This ensures each user stays within the 60 requests/hour limit
+            // Limit to last 20 versions to stay within rate limits (41 API calls total)
             $versions = array_slice($versions, -20, 20, true);
 
             // Get changelog for each version
