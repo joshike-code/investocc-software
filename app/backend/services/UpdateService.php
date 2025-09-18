@@ -424,7 +424,8 @@ class UpdateService
     /**
      * Get all changelogs for display on changelog history page
      * Returns formatted changelog data from oldest to newest version
-     * Uses caching to reduce GitHub API calls and avoid rate limits
+     * Makes 1 API call for files list + commit lookups for latest 20 versions
+     * Cached for 1 hour to minimize API calls
      * 
      * @return array Formatted changelog data for frontend display
      */
@@ -432,156 +433,167 @@ class UpdateService
     {
         try {
             $config = self::getConfig();
-            
-            // Use longer cache for changelog history (1 hour) since it changes less frequently
-            $cacheDir = __DIR__ . '/../cache/';
-            $cacheKey = 'all_changelogs_' . md5($config['owner'] . $config['repo'] . $config['folder']);
-            $cacheFile = $cacheDir . $cacheKey . '.json';
-            $cacheTtl = 3600;
 
-            // Check if we have cached data
-            if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < $cacheTtl) {
-                $cached = file_get_contents($cacheFile);
-                $cachedData = json_decode($cached, true);
-                
-                if ($cachedData && isset($cachedData['status']) && $cachedData['status'] === 'success') {
-                    return $cachedData;
-                }
-            }
-
-            // Fetch fresh data with extended cache for API calls
+            // API Call #1: Get folder contents (fetchJson handles caching)
             $apiUrl = "https://api.github.com/repos/" . $config['owner'] . "/" . $config['repo'] . "/contents/" . $config['folder'];
-            $files = self::fetchJson($apiUrl, 1800); // 30 minutes cache for folder contents
+            $files = self::fetchJson($apiUrl, 3600); // 1 hour cache
 
             $versions = [];
             $changelogData = [];
+            $latestVersion = '0.0.0';
 
-            // Find all version files and collect version info
+            // Build a lookup map of filenames to their GitHub file data for easy timestamp access
+            $fileDataLookup = [];
             foreach ($files as $file) {
+                $fileDataLookup[$file['name']] = $file;
+            }
+
+            // Process all files in one pass - collect versions, changelogs and extract timestamps
+            foreach ($files as $file) {
+                // Find version ZIP files
                 if ($file['type'] === 'file' && preg_match('/updatev(\d+\.\d+\.\d+)\.zip$/', $file['name'], $match)) {
                     $version = $match[1];
                     
-                    // Cache commit time requests with longer TTL
-                    $commitTime = self::getCachedCommitTime("updatev$version.zip");
+                    // Track latest version
+                    if (version_compare($version, $latestVersion, '>')) {
+                        $latestVersion = $version;
+                    }
                     
-                    $versions[$version] = [
-                        'version' => $version,
-                        'size' => $file['size'],
-                        'updated_at' => $commitTime
-                    ];
+                    // Initialize or update version data
+                    if (!isset($versions[$version])) {
+                        $versions[$version] = [
+                            'version' => $version,
+                            'size' => 0,
+                            'changelog' => ''
+                        ];
+                    }
+                    $versions[$version]['size'] = $file['size'];
+                }
+                
+                // Find changelog files - create entries even if no ZIP exists
+                if ($file['type'] === 'file' && preg_match('/changelog-v(\d+\.\d+\.\d+)\.txt$/', $file['name'], $match)) {
+                    $version = $match[1];
+                    
+                    // Track latest version for changelog files too
+                    if (version_compare($version, $latestVersion, '>')) {
+                        $latestVersion = $version;
+                    }
+                    
+                    // Initialize version entry if it doesn't exist
+                    if (!isset($versions[$version])) {
+                        $versions[$version] = [
+                            'version' => $version,
+                            'size' => 0,
+                            'changelog' => ''
+                        ];
+                    }
+                    
+                    // Get changelog content directly from download URL (not an API call, just HTTP)
+                    $changelog = self::fetchRaw($file['download_url']);
+                    $versions[$version]['changelog'] = $changelog !== false ? trim($changelog) : '';
                 }
             }
 
             // Sort versions from oldest to newest
             uksort($versions, 'version_compare');
-            
-            // Limit to last 20 versions to stay within rate limits (41 API calls total)
-            $versions = array_slice($versions, -20, 20, true);
 
-            // Get changelog for each version
+            // Get commit timestamps for the latest 20 versions (most recent ones users care about)
+            $sortedVersions = array_keys($versions);
+            $latestVersions = array_slice(array_reverse($sortedVersions), 0, 20); // Get last 20 versions
+            $commitTimestamps = self::getCommitTimestampsForVersions($latestVersions, $config);
+
+            // Build changelog data for all versions
             foreach ($versions as $version => $versionData) {
-                $changelog = self::getCachedChangelog($files, $version);
+                $timestamp = $commitTimestamps[$version] ?? '';
                 
                 $changelogData[] = [
                     'version' => $version,
-                    'changelog' => $changelog ?: 'No changelog available for this version.',
+                    'changelog' => $versionData['changelog'] ?: 'No changelog available for this version.',
                     'size' => $versionData['size'],
                     'size_formatted' => self::formatFileSize($versionData['size']),
-                    'release_date' => $versionData['updated_at'] ? date('M j, Y', strtotime($versionData['updated_at'])) : 'Unknown',
-                    'release_date_full' => $versionData['updated_at'] ?: '',
+                    'release_date' => $timestamp ? date('M j, Y', strtotime($timestamp)) : 'Unknown',
+                    'release_date_full' => $timestamp,
                     'download_url' => "https://raw.githubusercontent.com/" . $config['owner'] . "/" . $config['repo'] . "/main/" . $config['folder'] . "/updatev$version.zip"
                 ];
             }
 
-            $result = [
+            return [
                 'status' => 'success',
                 'total_versions' => count($changelogData),
                 'changelogs' => $changelogData,
-                'latest_version' => !empty($changelogData) ? end($changelogData)['version'] : '0.0.0',
+                'latest_version' => $latestVersion,
                 'oldest_version' => !empty($changelogData) ? reset($changelogData)['version'] : '0.0.0',
-                'cached_at' => date('Y-m-d H:i:s'),
-                'cache_expires' => date('Y-m-d H:i:s', time() + $cacheTtl)
+                'timestamps_found' => count($commitTimestamps),
+                'method' => 'recent_commits_lookup' // Gets timestamps for latest 20 versions from commit history
             ];
 
-            // Cache the complete result
-            if (!is_dir($cacheDir)) {
-                mkdir($cacheDir, 0777, true);
-            }
-            file_put_contents($cacheFile, json_encode($result));
-
-            return $result;
-
         } catch (Exception $e) {
+            error_log("getAllChangelogs failed: " . $e->getMessage());
             return [
                 'status' => 'error',
-                'message' => 'Failed to fetch changelog data',
-                'error' => $e->getMessage(),
+                'message' => 'Failed to retrieve changelogs: ' . $e->getMessage(),
                 'changelogs' => []
             ];
         }
     }
 
     /**
-     * Get cached commit time with extended cache duration
+     * Get commit timestamps for specific versions by looking up commits that affected those files
+     * Uses 1 hour caching to minimize API calls
+     * 
+     * @param array $versions List of version numbers to get timestamps for
+     * @param array $config Repository configuration
+     * @return array Map of version => timestamp
      */
-    private static function getCachedCommitTime(string $filename): string
+    private static function getCommitTimestampsForVersions(array $versions, array $config): array
     {
-        $cacheDir = __DIR__ . '/../cache/';
-        $cacheKey = 'commit_time_' . md5($filename);
-        $cacheFile = $cacheDir . $cacheKey . '.json';
-        $cacheTtl = 7200; // 2 hours cache for commit times (they don't change)
+        $timestamps = [];
+        
+        if (empty($versions)) {
+            return $timestamps;
+        }
 
-        // Check cache first
-        if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < $cacheTtl) {
-            $cached = file_get_contents($cacheFile);
-            $cachedData = json_decode($cached, true);
-            if ($cachedData && isset($cachedData['commit_time'])) {
-                return $cachedData['commit_time'];
+        try {
+            // API Call: Get recent commits for the updates folder (cached for 1 hour)
+            $commitsUrl = "https://api.github.com/repos/" . $config['owner'] . "/" . $config['repo'] . "/commits?path=" . $config['folder'] . "&per_page=100";
+            $commits = self::fetchJson($commitsUrl, 3600); // 1 hour cache
+
+            // For each commit, get details to see which files were affected
+            foreach ($commits as $commit) {
+                // API Call: Get individual commit details to see affected files (cached for 1 hour)
+                $commitDetails = self::fetchJson($commit['url'], 3600); // 1 hour cache
+                
+                if (!isset($commitDetails['files'])) {
+                    continue;
+                }
+
+                // Check if this commit affected any of our target versions
+                foreach ($commitDetails['files'] as $file) {
+                    // Match files like "updates/updatev1.9.9.zip" or "updates/changelog-v1.9.9.txt"
+                    if (preg_match('/(?:updatev|changelog-v)(\d+\.\d+\.\d+)\.(?:zip|txt)$/', $file['filename'], $match)) {
+                        $version = $match[1];
+                        
+                        // If this version is in our target list and we don't have a timestamp yet
+                        if (in_array($version, $versions) && !isset($timestamps[$version])) {
+                            $timestamps[$version] = $commit['commit']['author']['date'];
+                        }
+                    }
+                }
+                
+                // Early exit if we found all versions we're looking for
+                if (count($timestamps) >= count($versions)) {
+                    break;
+                }
             }
+
+        } catch (Exception $e) {
+            error_log("getCommitTimestampsForVersions failed: " . $e->getMessage());
         }
 
-        // Fetch fresh data
-        $commitTime = self::getCommitTime($filename);
-
-        // Cache the result
-        if (!is_dir($cacheDir)) {
-            mkdir($cacheDir, 0777, true);
-        }
-        file_put_contents($cacheFile, json_encode(['commit_time' => $commitTime, 'cached_at' => time()]));
-
-        return $commitTime;
+        return $timestamps;
     }
 
-    /**
-     * Get cached changelog content with extended cache duration
-     */
-    private static function getCachedChangelog(array $files, string $version): string
-    {
-        $cacheDir = __DIR__ . '/../cache/';
-        $cacheKey = 'changelog_' . md5($version);
-        $cacheFile = $cacheDir . $cacheKey . '.json';
-        $cacheTtl = 7200; // 2 hours cache for changelogs (they don't change)
 
-        // Check cache first
-        if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < $cacheTtl) {
-            $cached = file_get_contents($cacheFile);
-            $cachedData = json_decode($cached, true);
-            if ($cachedData && isset($cachedData['changelog'])) {
-                return $cachedData['changelog'];
-            }
-        }
-
-        // Fetch fresh data
-        $changelog = self::getChangelog($files, $version);
-
-        // Cache the result
-        if (!is_dir($cacheDir)) {
-            mkdir($cacheDir, 0777, true);
-        }
-        file_put_contents($cacheFile, json_encode(['changelog' => $changelog, 'cached_at' => time()]));
-
-        return $changelog;
-    }
 
     /**
      * Format file size in human readable format
