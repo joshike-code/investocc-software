@@ -108,12 +108,16 @@ class UserService
             }
         }
 
-        $stmt = $conn->prepare("INSERT INTO users (id, email, password, fname, lname, role, ref_code, referred_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        $ipData = self::getIpData();
+        $ip = $ipData['ipAddress'] ?? null;
+        $country = $ipData['countryCode'] ?? null;
+
+        $stmt = $conn->prepare("INSERT INTO users (id, email, password, fname, lname, country, role, ref_code, referred_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
         if (!$stmt) {
             Response::error('error: prepare failed', 500);
         }
 
-        $stmt->bind_param("ssssssss", $id, $email, $password, $fname, $lname, $role, $ref_code, $referred_by);
+        $stmt->bind_param("sssssssss", $id, $email, $password, $fname, $lname, $country, $role, $ref_code, $referred_by);
 
         if ($stmt->execute()) {
             unset($_SESSION['verified_email']);
@@ -489,6 +493,66 @@ class UserService
         Response::success($users);
 
        
+    }
+
+    public static function getIpData(): array
+    {
+        // Providers to try (order matters)
+        $providers = [
+            'https://freeipapi.com/api/json',
+            // 'https://ipapi.co/json',
+            // 'https://ifconfig.co/json',
+            // 'https://ipinfo.io/json',
+        ];
+
+        foreach ($providers as $url) {
+            $ch = curl_init();
+
+            // Basic options; prefer IPv4 to avoid IPv6/DNS problems on some hosts
+            curl_setopt_array($ch, [
+                CURLOPT_URL            => $url,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_CONNECTTIMEOUT => 4,   // seconds to connect
+                CURLOPT_TIMEOUT        => 7,   // total seconds
+                CURLOPT_IPRESOLVE      => CURL_IPRESOLVE_V4,
+                CURLOPT_HTTPHEADER     => ['Accept: application/json'],
+                CURLOPT_USERAGENT      => 'Mozilla/5.0 (compatible; MyApp/1.0; +https://example.com)',
+                // CURLOPT_SSL_VERIFYPEER => true, // keep enabled in production
+                // CURLOPT_SSL_VERIFYHOST => 2,
+            ]);
+
+            // Execute
+            $response = curl_exec($ch);
+            $errno    = curl_errno($ch);
+            $err      = curl_error($ch);
+            $status   = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($response === false || $errno) {
+                // Non-fatal: log and try next provider
+                error_log("IpService: cURL error for {$url} — ({$errno}) {$err}");
+                continue;
+            }
+
+            if ($status < 200 || $status >= 300) {
+                // Non-200 responses (403, 429, 500, etc)
+                error_log("IpService: HTTP status {$status} from {$url}");
+                continue;
+            }
+
+            $decoded = json_decode($response, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                error_log("IpService: invalid JSON from {$url}: " . json_last_error_msg());
+                continue;
+            }
+
+            // Got valid JSON — return it
+            return $decoded ?? [];
+        }
+
+        // All providers failed — return empty array (safe fallback)
+        return [];
     }
 
 }
