@@ -64,6 +64,7 @@ class UserService
 
         // Generate OTP
         $otp = OtpService::generateOtp($email);
+        
 
         // Response::success(['message' => 'OTP sent', 'otp' => $otp]);
         if (!MailService::sendOtpEmail($email, $otp, 'register')) {
@@ -495,14 +496,44 @@ class UserService
        
     }
 
+    public static function getClientIp(): string
+    {
+        $ipKeys = [
+            'HTTP_CLIENT_IP',
+            'HTTP_X_FORWARDED_FOR',
+            'HTTP_X_FORWARDED',
+            'HTTP_X_CLUSTER_CLIENT_IP',
+            'HTTP_FORWARDED_FOR',
+            'HTTP_FORWARDED',
+            'REMOTE_ADDR'
+        ];
+
+        foreach ($ipKeys as $key) {
+            if (!empty($_SERVER[$key])) {
+                $ipList = explode(',', $_SERVER[$key]);
+                foreach ($ipList as $ip) {
+                    $ip = trim($ip);
+                    if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+                        return $ip;
+                    }
+                }
+            }
+        }
+
+        // Fallback
+        return $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+    }
+
+
     public static function getIpData(): array
     {
+        $clientIp = self::getClientIp();
+
         // Providers to try (order matters)
         $providers = [
-            'https://freeipapi.com/api/json',
-            // 'https://ipapi.co/json',
-            // 'https://ifconfig.co/json',
-            // 'https://ipinfo.io/json',
+            "https://freeipapi.com/api/json/$clientIp",
+            // "https://ipapi.co/{$clientIp}/json/",
+            // "https://ipinfo.io/{$clientIp}/json",
         ];
 
         foreach ($providers as $url) {
