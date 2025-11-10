@@ -1,2 +1,2 @@
-version=2.0.3
-updated_at=2025-10-25T09:22:52Z
+version=2.0.4
+updated_at=2025-11-10T17:27:25Z

@@ -120,7 +120,7 @@ class UserController {
         } elseif($type === 'deduct') {
             UserService::deductBalance($input);
         } else {
-            Response::error('Method not allowed', 403);
+            Response::error('Method not allowed', 405);
         };
     }
 
