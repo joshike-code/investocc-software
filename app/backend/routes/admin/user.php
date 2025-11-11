@@ -31,7 +31,7 @@ switch ($_SERVER['REQUEST_METHOD']) {
         if($id === 'all') {
             UserController::getUsers();
         } else  {
-            UserController::getUser($id);
+            UserController::getUserToAdmin($id);
         };
         break;
 
@@ -39,7 +39,18 @@ switch ($_SERVER['REQUEST_METHOD']) {
         $user = AuthMiddleware::requirePermission('manage_users');
         $user_id = $user->user_id;
 
-        UserController::updateProfile($id);
+        if(isset($_GET['action'])) {
+            $action = $_GET['action'];
+            if($action === 'profile') {
+                UserController::updateProfile($id);
+            } elseif($action === 'status') {
+                UserController::updateUserStatus($id);
+            } else {
+                Response::error('Invalid action', 400);
+            }
+        } else {
+            Response::error('Action parameter required', 400);
+        }
         break;
 
     case 'DELETE':

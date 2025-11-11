@@ -20,7 +20,7 @@ class UserService
             }
         
             $conn = Database::getConnection();
-            $stmt = $conn->prepare("SELECT id, password, role, permissions FROM users WHERE email = ?");
+            $stmt = $conn->prepare("SELECT id, password, role, permissions, status FROM users WHERE email = ?");
             $stmt->bind_param("s", $email);
             $stmt->execute();
             $result = $stmt->get_result();
@@ -33,6 +33,11 @@ class UserService
         
             // Fetch the user data
             $user = $result->fetch_assoc();
+
+            if($user['status'] === 'suspended') {
+                Response::error('User suspended', 400);
+                exit;
+            }
 
             // Verify the password
             if (!password_verify($password, $user['password'])) {
@@ -195,7 +200,7 @@ class UserService
     public static function getUserById($id)
     {
         $conn = Database::getConnection();
-        $stmt = $conn->prepare("SELECT email, fname, lname, phone, country, balance, ref_balance, ref_code, permissions, date_registered
+        $stmt = $conn->prepare("SELECT email, fname, lname, phone, country, balance, ref_balance, ref_code, permissions, status, date_registered
             FROM users 
             WHERE id = ?");
         $stmt->bind_param("s", $id);
@@ -433,6 +438,25 @@ class UserService
         } else {
             Response::error('Password update failed', 500);
         }
+    }
+
+    public static function updateUserStatus($user_id, $input)
+    {
+        $conn = Database::getConnection();
+
+        $status = $input['status'];
+        if($status !== 'active' && $status !== 'suspended') {
+            Response::error('Invalid input', 422);
+        };
+
+        $stmt = $conn->prepare("UPDATE users SET status = ? WHERE id = ?");
+        $stmt->bind_param("si", $status, $user_id);
+
+        if (!$stmt->execute()) {
+            Response::error('Status update failed', 500);
+        };
+
+        return true;
     }
 
     public static function getUserReferralCount($user_id) {

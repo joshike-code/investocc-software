@@ -16,6 +16,14 @@ class UserController {
 
     public static function getUser($user_id) {
         $userData = UserService::getUserById($user_id);
+        if($userData['status'] === 'suspended') {
+            Response::error('User suspended', 400);
+        }
+        Response::success($userData);
+    }
+
+    public static function getUserToAdmin($user_id) {
+        $userData = UserService::getUserById($user_id);
         Response::success($userData);
     }
 
@@ -141,6 +149,25 @@ class UserController {
         }
 
         UserService::updateUserProfile($user_id, $input);
+    }
+
+    public static function updateUserStatus($user_id) {
+        $rawInput = json_decode(file_get_contents("php://input"), true);
+        $input = SanitizationService::sanitize($rawInput);
+        
+        // Validate Input
+        $rules = [
+            'status'  => 'required|string'
+        ];
+        $input_errors = Validator::validate($input, $rules);
+        if(!empty($input_errors)) {
+            Response::error(['validation_errors' => $input_errors], 422);
+        }
+
+        $response = UserService::updateUserStatus($user_id, $input);
+        if($response) {
+            self::getUserToAdmin($user_id);
+        };
     }
 
     public static function createAdmin() {
