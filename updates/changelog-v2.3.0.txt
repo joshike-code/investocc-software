@@ -1,0 +1,4 @@
+*Bug fixes and improvements
+*Full country name for users in admin
+*Active/suspended users + admin management
+*Fixed update license validation error
