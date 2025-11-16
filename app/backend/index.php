@@ -180,6 +180,10 @@ switch($request) {
         require 'routes/admin/withdraw.php';
         break;
 
+    case $host.'api/admin/deposit':
+        require 'routes/admin/deposit.php';
+        break;
+
     case $host.'api/admin/plans':
         require 'routes/admin/plan.php';
         break;

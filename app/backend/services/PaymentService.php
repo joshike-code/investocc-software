@@ -103,7 +103,7 @@ class PaymentService
                 payments p
             INNER JOIN 
                 users u ON p.user_id = u.id
-        WHERE p.method != 'order'");
+        WHERE p.method = 'crypto' OR p.method = 'bank'");
         $stmt->execute();
         $result = $stmt->get_result();
         $payments = [];
@@ -151,6 +151,86 @@ class PaymentService
         }
 
         return $result;
+    }
+
+    public static function getPendingDeposits() {
+        $conn = Database::getConnection();
+        $stmt = $conn->prepare("
+            SELECT 
+                p.id AS payment_id, p.tx_ref, p.method, p.amount, p.coin, p.bank_name, p.account_number, p.date,
+                u.id AS user_id, u.fname, u.lname, u.email
+            FROM 
+                payments p
+            INNER JOIN 
+                users u ON p.user_id = u.id
+            WHERE (p.method = 'crypto' OR p.method = 'bank') AND p.status = 'pending' AND p.type = 'credit'
+        ");
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $pending_deposits = [];
+
+        while ($row = $result->fetch_assoc()) {
+            $pending_deposits[] = $row;
+        }
+
+        // Total pending deposits count
+        $stmtTotal = $conn->query("SELECT COUNT(*) AS pending_deposits_count FROM payments WHERE (method = 'crypto' OR method = 'bank') AND status = 'pending' AND type = 'credit'");
+        $pending_deposits_count = intval($stmtTotal->fetch_assoc()['pending_deposits_count']);
+
+        Response::success([
+            'pending_deposits'     => $pending_deposits,
+            'pending_deposits_count' => $pending_deposits_count
+        ]);
+    }
+
+    public static function deletePayment($id) {
+        $conn = Database::getConnection();
+
+        // Check if payment exists
+        $stmt = $conn->prepare("SELECT id FROM payments WHERE id = ?");
+        $stmt->bind_param("s", $id);
+        $stmt->execute();
+        $result = $stmt->get_result()->fetch_assoc();
+
+        if (!$result) {
+            Response::error('Payment not found', 404);
+        }
+
+        $stmt = $conn->prepare("DELETE FROM payments WHERE id = ?");
+        $stmt->bind_param("s", $id);
+
+        if ($stmt->execute()) {
+            Response::success("Payment deleted successfully.");
+        } else {
+            Response::error("Failed to delete payment.", 500);
+        }
+    }
+
+    public static function editPaymentRecord($id, $input)
+    {
+        $conn = Database::getConnection();
+
+        $amount = $input['amount'];
+        $date = gmdate('Y-m-d H:i:s', strtotime($input['date']));
+
+        $paymentStmt = $conn->prepare("SELECT tx_ref FROM payments WHERE id = ?");
+        $paymentStmt->bind_param("s", $id);
+        $paymentStmt->execute();
+        $paymentResult = $paymentStmt->get_result();
+        if(!$paymentResult->fetch_assoc()) {
+          Response::error('Payment data not found', 404);
+        }
+
+
+        $stmt = $conn->prepare("UPDATE payments SET date = ?, amount = ? WHERE id = ?");
+        $stmt->bind_param("sds", $date, $amount, $id);
+
+        if(!$stmt->execute()) {
+          Response::error('Record update failed', 500);
+        }
+
+        $paymentData = self::getPaymentByID($id);
+        Response::success($paymentData);
     }
     
     public static function searchPaymentsByRef($searchTerm)

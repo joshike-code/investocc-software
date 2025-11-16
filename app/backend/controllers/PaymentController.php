@@ -37,8 +37,33 @@ class PaymentController {
         Response::success($paymentData);
     }
 
+    public static function getPendingDeposits() {
+       PaymentService::getPendingDeposits();
+    }
+
     public static function searchPaymentsByRef($ref) {
         PaymentService::searchPaymentsByRef($ref);
+    }
+
+    public static function deletePayment($id) {
+        PaymentService::deletePayment($id);
+    }
+
+    public static function editPaymentRecord($id) {
+        $rawInput = json_decode(file_get_contents("php://input"), true);
+        $input = SanitizationService::sanitize($rawInput);
+        
+        // Validate Input
+        $rules = [
+            'amount' => 'required|float',
+            'date' => 'required|string'
+        ];
+        $input_errors = Validator::validate($input, $rules);
+        if(!empty($input_errors)) {
+            Response::error(['validation_errors' => $input_errors], 422);
+        }
+
+        PaymentService::editPaymentRecord($id, $input);
     }
 
     public static function handleCryptoPayment($user_id, $rawInput) {

@@ -19,11 +19,10 @@ class PermissionService
             'view_referral_earnings',
             'manage_payment_wallets',
             'manage_platform_settings',
-            'manage_crypto',
             'manage_admins',
             'manage_bank_accounts',
-            'manage_bank_payments',
             'manage_withdrawals',
+            'manage_deposits',
             'manage_plans',
         ];
     }

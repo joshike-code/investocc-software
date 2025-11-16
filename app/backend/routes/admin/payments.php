@@ -21,35 +21,43 @@ if(!$id) {
 
 switch ($_SERVER['REQUEST_METHOD']) {
     case 'GET':
-        $user = AuthMiddleware::requirePermission('view_payments');
-        $user_id = $user->user_id;
-
         if(isset($_GET['search'])) {
             $search = SanitizationService::sanitizeParam($_GET['search']);
             PaymentController::searchPaymentsByRef($search);
         }
         if($id === 'all') {
+            $user = AuthMiddleware::requirePermission('view_payments');
+            $user_id = $user->user_id;
             PaymentController::getAllPayments();  
         } else  {
+            $user = AuthMiddleware::requirePermission('manage_deposits');
+            $user_id = $user->user_id;
             PaymentController::getSelectPayment($id);
         };
         break;
 
     case 'PUT':
+        $user = AuthMiddleware::requirePermission('manage_deposits');
+        $user_id = $user->user_id;
         if(isset($_GET['action'])) {
             $action = SanitizationService::sanitizeParam($_GET['action']);
             if($action === 'crypto') {
-                $user = AuthMiddleware::requirePermission('manage_crypto');
-                $user_id = $user->user_id;
                 PaymentController::updateCryptoPaymentStatus($id);
             } elseif($action === 'bank') {
-                $user = AuthMiddleware::requirePermission('manage_bank_payments');
-                $user_id = $user->user_id;
                 PaymentController::updateBankPaymentStatus($id);
+            } elseif($action === 'edit-record') {
+                PaymentController::editPaymentRecord($id);
             } else {
-                Response::error('Method not allowed', 403);
+                Response::error('Method not allowed', 405);
             }
         }
+        break;
+
+    case 'DELETE':
+        $user = AuthMiddleware::requirePermission('manage_deposits');
+        $user_id = $user->user_id;
+
+        PaymentController::deletePayment($id);
         break;
 
     default:
