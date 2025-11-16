@@ -1,0 +1,3 @@
+*Improved admin payment list data (more organized and easier to navigate)
+*New Pending deposits tab
+*New delete and edit deposit payment record
