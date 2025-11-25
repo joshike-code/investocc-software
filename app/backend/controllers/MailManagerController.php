@@ -31,7 +31,7 @@ class MailManagerController {
             'password' => 'required|string',
             'auth' => 'required|string',
             'security' => 'required|string',
-            'port' => 'required|string',
+            'port' => 'required|float',
         ];
         $input_errors = Validator::validate($input, $rules);
         if(!empty($input_errors)) {
