@@ -1,0 +1,1 @@
+#decagon-iframe{visibility:visible;opacity:1;transition:opacity .35s linear,visibility 0s linear .35s;position:relative;z-index:20!important}[data-is-mobile-nav-open] #decagon-iframe{visibility:hidden!important;opacity:0!important;z-index:0!important}
