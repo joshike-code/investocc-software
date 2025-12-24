@@ -53,8 +53,7 @@ This software was built by [Joshike-code](https://github.com/joshike-code) for *
    - Password: 1234
 
 7. **Set your Degiant Passkey**  
-You will be prompted to input the **passkey** after login.  
-Obtain this from your merchant after purchasing the software.
+This software is free! Use `degiant-free-pass` to unlock software
 
 8. **Configure Mail Settings**  
 Go to **Admin Settings** and configure mail settings to enable OTP verification for new users.
@@ -73,7 +72,7 @@ app/backend/cron/cron_update.php
 If the Installation Wizard doesn't work:
 
 - Create a `.env` file inside `/app/backend`
-- Use `.env.example` as a reference
+- Use `.env-example` as a reference
 - You can always update settings via this file
 
 ---
@@ -100,11 +99,5 @@ Supports methods: `GET`, `POST`, `PUT`, `DELETE`
 ## 📬 Support
 
 For assistance, open an [Issue](https://github.com/joshike-code/investocc-software/issues)  
-
----
-
-## 🔒 Licensing
-
-This software is commercial and licensed. Redistribution without permission is not allowed.
 
 ---
